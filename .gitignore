@@ -1,0 +1,11 @@
+node_modules/
+dist/
+release/
+out/
+*.log
+*.tmp
+Thumbs.db
+.DS_Store
+__pycache__/
+*.pyc
+build/

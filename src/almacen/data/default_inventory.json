@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "name": "Inventario almacen informatico",
+    "version": 1,
+    "last_updated": "2026-04-08T10:00:00Z"
+  },
+  "equipment_types": [],
+  "pallets": [
+    {
+      "pale": "1",
+      "items": []
+    },
+    {
+      "pale": "2",
+      "items": []
+    },
+    {
+      "pale": "3",
+      "items": []
+    },
+    {
+      "pale": "4",
+      "items": []
+    },
+    {
+      "pale": "5",
+      "items": []
+    },
+    {
+      "pale": "6",
+      "items": []
+    },
+    {
+      "pale": "7",
+      "items": []
+    },
+    {
+      "pale": "8",
+      "items": []
+    },
+    {
+      "pale": "9",
+      "items": []
+    },
+    {
+      "pale": "10",
+      "items": []
+    }
+  ]
+}
