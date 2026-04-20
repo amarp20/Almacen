@@ -53,7 +53,7 @@ pip install -r requirements-dev.txt
 Genera el ejecutable:
 
 ```powershell
-pyinstaller --noconsole --onefile --name "Almacen Informatico" app.py
+.\build.ps1
 ```
 
 El ejecutable quedara dentro de `dist`.

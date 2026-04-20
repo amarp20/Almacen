@@ -1,6 +1,8 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
+import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -25,17 +27,18 @@ class InventoryApp:
         self.withdrawal_logs.setdefault("withdrawals", [])
 
         self.root = tk.Tk()
-        self.root.title("Almacen Informatico")
+        self.root.title("Almacén Informático")
         self.root.geometry("1280x820")
         self.root.minsize(1100, 720)
-        self.root.configure(bg="#0b1120")
+        self.root.configure(bg="#dbe7f3")
+        self._icon_image: tk.PhotoImage | None = None
+        self._configure_window_icon()
 
         self.selected_equipment_var = tk.StringVar()
         self.selected_pallet_var = tk.StringVar()
         self.operation_source_pallet_var = tk.StringVar()
         self.operation_equipment_var = tk.StringVar()
         self.withdrawal_who_var = tk.StringVar()
-        self.consultation_equipment_var = tk.StringVar()
         self.consultation_total_var = tk.StringVar(value="0")
         self.withdrawal_filter_equipment_var = tk.StringVar()
         self.withdrawal_filter_date_var = tk.StringVar()
@@ -45,70 +48,108 @@ class InventoryApp:
         self._build_layout()
         self._refresh_all_views()
 
+    def _resource_path(self, relative_path: str) -> Path:
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            return Path(sys._MEIPASS) / relative_path
+        return Path(__file__).resolve().parent / relative_path
+
+    def _configure_window_icon(self) -> None:
+        png_path = self._resource_path("assets/app_icon.png")
+        ico_path = self._resource_path("assets/app_icon.ico")
+
+        if png_path.exists():
+            try:
+                self._icon_image = tk.PhotoImage(file=str(png_path))
+                self.root.iconphoto(True, self._icon_image)
+            except tk.TclError:
+                self._icon_image = None
+
+        if ico_path.exists():
+            try:
+                self.root.iconbitmap(default=str(ico_path))
+            except tk.TclError:
+                pass
+
     def _configure_styles(self) -> None:
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("Root.TFrame", background="#0b1120")
-        style.configure("Panel.TFrame", background="#111827")
+        style.configure(".", background="#dbe7f3", foreground="#1e293b")
+        style.configure("TNotebook", background="#dbe7f3", borderwidth=0)
+        style.configure(
+            "TNotebook.Tab",
+            background="#c8d7e8",
+            foreground="#1e293b",
+            padding=(12, 8),
+        )
+        style.map(
+            "TNotebook.Tab",
+            background=[("selected", "#f8fbff"), ("active", "#d8e5f2")],
+            foreground=[("selected", "#0f172a"), ("active", "#0f172a")],
+        )
+        style.configure("Root.TFrame", background="#dbe7f3")
+        style.configure("Panel.TFrame", background="#f8fbff")
         style.configure(
             "PanelTitle.TLabel",
-            background="#111827",
-            foreground="#e5e7eb",
+            background="#f8fbff",
+            foreground="#0f172a",
             font=("Segoe UI", 13, "bold"),
         )
         style.configure(
             "Muted.TLabel",
-            background="#111827",
-            foreground="#94a3b8",
+            background="#f8fbff",
+            foreground="#516275",
             font=("Segoe UI", 10),
         )
         style.configure(
             "SidebarTitle.TLabel",
-            background="#0f172a",
-            foreground="#f8fafc",
+            background="#eef4fb",
+            foreground="#102033",
             font=("Segoe UI", 20, "bold"),
         )
         style.configure(
             "SidebarText.TLabel",
-            background="#0f172a",
-            foreground="#94a3b8",
+            background="#eef4fb",
+            foreground="#5b6b7f",
             font=("Segoe UI", 10),
         )
         style.configure(
             "StatValue.TLabel",
-            background="#111827",
-            foreground="#f8fafc",
+            background="#f8fbff",
+            foreground="#0f172a",
             font=("Segoe UI", 20, "bold"),
         )
         style.configure(
             "Primary.TButton",
             font=("Segoe UI", 10, "bold"),
             padding=(12, 10),
+            background="#4da3d9",
+            foreground="#ffffff",
+            borderwidth=0,
         )
         style.map(
             "Primary.TButton",
-            background=[("active", "#38bdf8"), ("!disabled", "#0ea5e9")],
-            foreground=[("!disabled", "#00111a")],
+            background=[("active", "#3f95cb"), ("!disabled", "#4da3d9")],
+            foreground=[("!disabled", "#ffffff")],
         )
         style.configure(
             "Treeview",
-            background="#0f172a",
-            fieldbackground="#0f172a",
-            foreground="#e5e7eb",
+            background="#eef4fb",
+            fieldbackground="#eef4fb",
+            foreground="#142235",
             rowheight=30,
             borderwidth=0,
             font=("Segoe UI", 10),
         )
         style.configure(
             "Treeview.Heading",
-            background="#172033",
-            foreground="#cbd5e1",
+            background="#d5e0ec",
+            foreground="#102033",
             font=("Segoe UI", 10, "bold"),
         )
         style.map(
             "Treeview",
-            background=[("selected", "#0ea5e9")],
-            foreground=[("selected", "#00111a")],
+            background=[("selected", "#7fc4eb")],
+            foreground=[("selected", "#0f172a")],
         )
 
     def _build_layout(self) -> None:
@@ -131,11 +172,11 @@ class InventoryApp:
         pallets_tab = ttk.Frame(notebook, style="Root.TFrame", padding=12)
 
         notebook.add(equipment_tab, text="Tipos de equipo")
-        notebook.add(assign_tab, text="Asignacion a pales")
+        notebook.add(assign_tab, text="Asignación a palés")
         notebook.add(operations_tab, text="Operaciones")
-        notebook.add(consultation_tab, text="Consulta de equipos")
+        notebook.add(consultation_tab, text="Consulta por palés")
         notebook.add(withdrawal_logs_tab, text="Consulta de retiradas")
-        notebook.add(pallets_tab, text="Vista por pale")
+        notebook.add(pallets_tab, text="Ubicación de equipos")
 
         self._build_equipment_tab(equipment_tab)
         self._build_assignments_tab(assign_tab)
@@ -162,7 +203,7 @@ class InventoryApp:
             row=1, column=0, columnspan=2, sticky="w", pady=(6, 16)
         )
 
-        ttk.Label(form_panel, text="Categoria", style="Muted.TLabel").grid(
+        ttk.Label(form_panel, text="Categoría", style="Muted.TLabel").grid(
             row=2, column=0, sticky="w", pady=(0, 4)
         )
         self.category_entry = ttk.Entry(form_panel, width=30)
@@ -209,7 +250,7 @@ class InventoryApp:
         ).pack(side="left")
         form_panel.columnconfigure(1, weight=1)
 
-        ttk.Label(list_panel, text="Catalogo", style="Muted.TLabel").grid(
+        ttk.Label(list_panel, text="Catálogo", style="Muted.TLabel").grid(
             row=0, column=0, sticky="w"
         )
         ttk.Label(list_panel, text="Tipos registrados", style="PanelTitle.TLabel").grid(
@@ -222,7 +263,7 @@ class InventoryApp:
 
         for column, text, width in [
             ("id", "ID", 100),
-            ("categoria", "Categoria", 140),
+            ("categoria", "Categoría", 140),
             ("marca", "Marca", 140),
             ("modelo", "Modelo", 220),
             ("observaciones", "Observaciones", 260),
@@ -252,10 +293,10 @@ class InventoryApp:
         list_panel.columnconfigure(0, weight=1)
         list_panel.rowconfigure(1, weight=1)
 
-        ttk.Label(form_panel, text="Asignacion", style="Muted.TLabel").grid(
+        ttk.Label(form_panel, text="Asignación", style="Muted.TLabel").grid(
             row=0, column=0, columnspan=2, sticky="w"
         )
-        ttk.Label(form_panel, text="Asignar equipo a pale", style="PanelTitle.TLabel").grid(
+        ttk.Label(form_panel, text="Asignar equipo a palé", style="PanelTitle.TLabel").grid(
             row=1, column=0, columnspan=2, sticky="w", pady=(6, 16)
         )
 
@@ -270,7 +311,7 @@ class InventoryApp:
         )
         self.equipment_combo.grid(row=2, column=1, sticky="ew", pady=(0, 10))
 
-        ttk.Label(form_panel, text="Pale", style="Muted.TLabel").grid(
+        ttk.Label(form_panel, text="Palé", style="Muted.TLabel").grid(
             row=3, column=0, sticky="w", pady=(0, 4)
         )
         self.assignment_pallet_var = tk.StringVar(value=FIXED_PALLETS[0])
@@ -292,7 +333,7 @@ class InventoryApp:
 
         ttk.Button(
             form_panel,
-            text="Asignar al pale",
+            text="Asignar al palé",
             style="Primary.TButton",
             command=self._assign_to_pallet,
         ).grid(row=5, column=0, columnspan=2, sticky="ew")
@@ -310,9 +351,9 @@ class InventoryApp:
         self.assignments_tree.grid(row=1, column=0, sticky="nsew")
 
         for column, text, width in [
-            ("pale", "Pale", 120),
+            ("pale", "Palé", 120),
             ("id", "ID", 90),
-            ("categoria", "Categoria", 130),
+            ("categoria", "Categoría", 130),
             ("marca", "Marca", 130),
             ("modelo", "Modelo", 220),
             ("cantidad", "Cantidad", 90),
@@ -327,65 +368,50 @@ class InventoryApp:
         self.assignments_tree.configure(yscrollcommand=assignments_scroll.set)
 
     def _build_pallets_tab(self, parent: ttk.Frame) -> None:
-        parent.columnconfigure(1, weight=1)
+        parent.columnconfigure(0, weight=1)
         parent.rowconfigure(0, weight=1)
-
-        selector_panel = ttk.Frame(parent, style="Panel.TFrame", padding=18)
-        selector_panel.grid(row=0, column=0, sticky="nsw", padx=(0, 18))
         list_panel = ttk.Frame(parent, style="Panel.TFrame", padding=18)
-        list_panel.grid(row=0, column=1, sticky="nsew")
+        list_panel.grid(row=0, column=0, sticky="nsew")
         list_panel.columnconfigure(0, weight=1)
         list_panel.rowconfigure(1, weight=1)
-
-        ttk.Label(selector_panel, text="Consulta", style="Muted.TLabel").grid(
-            row=0, column=0, sticky="w"
-        )
-        ttk.Label(selector_panel, text="Contenido por pale", style="PanelTitle.TLabel").grid(
-            row=1, column=0, sticky="w", pady=(6, 16)
-        )
-
-        ttk.Label(selector_panel, text="Selecciona un pale", style="Muted.TLabel").grid(
-            row=2, column=0, sticky="w", pady=(0, 4)
-        )
-        self.pallet_combo = ttk.Combobox(
-            selector_panel,
-            textvariable=self.selected_pallet_var,
-            state="readonly",
-            width=28,
-        )
-        self.pallet_combo.grid(row=3, column=0, sticky="ew", pady=(0, 12))
-        self.pallet_combo.bind("<<ComboboxSelected>>", self._on_pallet_selected)
-
-        ttk.Button(
-            selector_panel,
-            text="Actualizar vista",
-            command=self._render_selected_pallet,
-        ).grid(row=4, column=0, sticky="ew")
 
         ttk.Label(list_panel, text="Detalle", style="Muted.TLabel").grid(
             row=0, column=0, sticky="w"
         )
-        ttk.Label(list_panel, text="Contenido del pale", style="PanelTitle.TLabel").grid(
+        ttk.Label(list_panel, text="Ubicación por equipo", style="PanelTitle.TLabel").grid(
             row=0, column=0, sticky="w", pady=(22, 12)
         )
 
-        columns = ("id", "categoria", "marca", "modelo", "cantidad")
+        columns = (
+            "id",
+            "categoria",
+            "marca",
+            "modelo",
+            *[f"pale_{pale}" for pale in FIXED_PALLETS],
+            "total",
+        )
         self.pallet_tree = ttk.Treeview(list_panel, columns=columns, show="headings")
         self.pallet_tree.grid(row=1, column=0, sticky="nsew")
 
         for column, text, width in [
             ("id", "ID", 100),
-            ("categoria", "Categoria", 140),
+            ("categoria", "Categoría", 140),
             ("marca", "Marca", 140),
             ("modelo", "Modelo", 240),
-            ("cantidad", "Cantidad", 90),
+            *[(f"pale_{pale}", f"Palé {pale}", 80) for pale in FIXED_PALLETS],
+            ("total", "Total", 90),
         ]:
             self.pallet_tree.heading(column, text=text)
             self.pallet_tree.column(column, width=width, anchor="w")
 
         pallet_scroll = ttk.Scrollbar(list_panel, orient="vertical", command=self.pallet_tree.yview)
         pallet_scroll.grid(row=1, column=1, sticky="ns")
+        pallet_scroll_x = ttk.Scrollbar(
+            list_panel, orient="horizontal", command=self.pallet_tree.xview
+        )
+        pallet_scroll_x.grid(row=2, column=0, sticky="ew")
         self.pallet_tree.configure(yscrollcommand=pallet_scroll.set)
+        self.pallet_tree.configure(xscrollcommand=pallet_scroll_x.set)
 
     def _build_operations_tab(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(1, weight=1)
@@ -405,7 +431,7 @@ class InventoryApp:
             row=1, column=0, columnspan=2, sticky="w", pady=(6, 16)
         )
 
-        ttk.Label(form_panel, text="Pale origen", style="Muted.TLabel").grid(
+        ttk.Label(form_panel, text="Palé origen", style="Muted.TLabel").grid(
             row=2, column=0, sticky="w", pady=(0, 4)
         )
         self.operation_source_pallet_combo = ttk.Combobox(
@@ -437,7 +463,7 @@ class InventoryApp:
         self.operation_quantity.set("1")
         self.operation_quantity.grid(row=4, column=1, sticky="ew", pady=(0, 10))
 
-        ttk.Label(form_panel, text="Pale destino", style="Muted.TLabel").grid(
+        ttk.Label(form_panel, text="Palé destino", style="Muted.TLabel").grid(
             row=5, column=0, sticky="w", pady=(0, 4)
         )
         self.destination_pallet_var = tk.StringVar(value=FIXED_PALLETS[0])
@@ -450,7 +476,7 @@ class InventoryApp:
         )
         self.destination_pallet_combo.grid(row=5, column=1, sticky="ew", pady=(0, 16))
 
-        ttk.Label(form_panel, text="Quien retira", style="Muted.TLabel").grid(
+        ttk.Label(form_panel, text="Quién retira", style="Muted.TLabel").grid(
             row=6, column=0, sticky="w", pady=(0, 4)
         )
         self.withdrawal_who_entry = ttk.Entry(
@@ -478,12 +504,12 @@ class InventoryApp:
 
         ttk.Button(
             form_panel,
-            text="Restar del pale",
+            text="Restar del palé",
             command=self._remove_from_pallet,
         ).grid(row=8, column=0, sticky="ew", padx=(0, 6))
         ttk.Button(
             form_panel,
-            text="Mover a otro pale",
+            text="Mover a otro palé",
             style="Primary.TButton",
             command=self._move_between_pallets,
         ).grid(row=8, column=1, sticky="ew", padx=(6, 0))
@@ -492,7 +518,7 @@ class InventoryApp:
         ttk.Label(list_panel, text="Existencias actuales", style="Muted.TLabel").grid(
             row=0, column=0, sticky="w"
         )
-        ttk.Label(list_panel, text="Stock por pale", style="PanelTitle.TLabel").grid(
+        ttk.Label(list_panel, text="Stock por palé", style="PanelTitle.TLabel").grid(
             row=0, column=0, sticky="w", pady=(22, 12)
         )
 
@@ -501,9 +527,9 @@ class InventoryApp:
         self.operations_tree.grid(row=1, column=0, sticky="nsew")
 
         for column, text, width in [
-            ("pale", "Pale", 120),
+            ("pale", "Palé", 120),
             ("id", "ID", 90),
-            ("categoria", "Categoria", 130),
+            ("categoria", "Categoría", 130),
             ("marca", "Marca", 130),
             ("modelo", "Modelo", 220),
             ("cantidad", "Cantidad", 90),
@@ -518,69 +544,63 @@ class InventoryApp:
         self.operations_tree.configure(yscrollcommand=operations_scroll.set)
 
     def _build_consultation_tab(self, parent: ttk.Frame) -> None:
-        parent.columnconfigure(1, weight=1)
+        parent.columnconfigure(0, weight=1)
         parent.rowconfigure(0, weight=1)
-
-        selector_panel = ttk.Frame(parent, style="Panel.TFrame", padding=18)
-        selector_panel.grid(row=0, column=0, sticky="nsw", padx=(0, 18))
         list_panel = ttk.Frame(parent, style="Panel.TFrame", padding=18)
-        list_panel.grid(row=0, column=1, sticky="nsew")
+        list_panel.grid(row=0, column=0, sticky="nsew")
         list_panel.columnconfigure(0, weight=1)
-        list_panel.rowconfigure(2, weight=1)
+        list_panel.rowconfigure(1, weight=1)
 
-        ttk.Label(selector_panel, text="Consulta", style="Muted.TLabel").grid(
-            row=0, column=0, sticky="w"
-        )
-        ttk.Label(selector_panel, text="Existencias por equipo", style="PanelTitle.TLabel").grid(
-            row=1, column=0, sticky="w", pady=(6, 16)
+        ttk.Label(list_panel, text="Detalle por palés", style="PanelTitle.TLabel").grid(
+            row=0, column=0, sticky="w", pady=(0, 12)
         )
 
-        ttk.Label(selector_panel, text="Tipo de equipo", style="Muted.TLabel").grid(
-            row=2, column=0, sticky="w", pady=(0, 4)
-        )
-        self.consultation_equipment_combo = ttk.Combobox(
-            selector_panel,
-            textvariable=self.consultation_equipment_var,
-            state="readonly",
-            width=34,
-        )
-        self.consultation_equipment_combo.grid(row=3, column=0, sticky="ew", pady=(0, 12))
-        self.consultation_equipment_combo.bind(
-            "<<ComboboxSelected>>", self._on_consultation_equipment_selected
-        )
-
-        ttk.Button(
-            selector_panel,
-            text="Actualizar consulta",
-            command=self._render_consultation_table,
-        ).grid(row=4, column=0, sticky="ew")
-
-        total_panel = ttk.Frame(list_panel, style="Panel.TFrame", padding=18)
-        total_panel.grid(row=0, column=0, sticky="ew", pady=(0, 18))
-        ttk.Label(total_panel, text="Cantidad total en almacen", style="Muted.TLabel").pack(
-            anchor="w"
-        )
-        ttk.Label(total_panel, textvariable=self.consultation_total_var, style="StatValue.TLabel").pack(
-            anchor="w", pady=(8, 0)
-        )
-
-        ttk.Label(list_panel, text="Detalle por pale", style="PanelTitle.TLabel").grid(
-            row=1, column=0, sticky="w", pady=(0, 12)
-        )
-
-        columns = ("pale", "cantidad")
+        columns = ("pale", "id", "categoria", "marca", "modelo", "cantidad")
         self.consultation_tree = ttk.Treeview(list_panel, columns=columns, show="headings")
-        self.consultation_tree.grid(row=2, column=0, sticky="nsew")
-        self.consultation_tree.heading("pale", text="Pale")
-        self.consultation_tree.heading("cantidad", text="Cantidad")
-        self.consultation_tree.column("pale", width=140, anchor="w")
-        self.consultation_tree.column("cantidad", width=140, anchor="w")
+        self.consultation_tree.grid(row=1, column=0, sticky="nsew")
+        for column, text, width in [
+            ("pale", "Palé", 100),
+            ("id", "ID", 100),
+            ("categoria", "Categoría", 140),
+            ("marca", "Marca", 140),
+            ("modelo", "Modelo", 220),
+            ("cantidad", "Cantidad", 100),
+        ]:
+            self.consultation_tree.heading(column, text=text)
+            self.consultation_tree.column(column, width=width, anchor="w")
 
         consultation_scroll = ttk.Scrollbar(
             list_panel, orient="vertical", command=self.consultation_tree.yview
         )
-        consultation_scroll.grid(row=2, column=1, sticky="ns")
+        consultation_scroll.grid(row=1, column=1, sticky="ns")
+        consultation_scroll_x = ttk.Scrollbar(
+            list_panel, orient="horizontal", command=self.consultation_tree.xview
+        )
+        consultation_scroll_x.grid(row=2, column=0, sticky="ew")
         self.consultation_tree.configure(yscrollcommand=consultation_scroll.set)
+        self.consultation_tree.configure(xscrollcommand=consultation_scroll_x.set)
+        self.consultation_tree.tag_configure(
+            "odd_pallet_group",
+            background="#d8e2ee",
+            foreground="#102033",
+            font=("Segoe UI", 10, "bold"),
+        )
+        self.consultation_tree.tag_configure(
+            "odd_pallet_item",
+            background="#ecf2f8",
+            foreground="#142235",
+        )
+        self.consultation_tree.tag_configure(
+            "even_pallet_group",
+            background="#b7d0e6",
+            foreground="#102033",
+            font=("Segoe UI", 10, "bold"),
+        )
+        self.consultation_tree.tag_configure(
+            "even_pallet_item",
+            background="#dbe9f4",
+            foreground="#142235",
+        )
 
     def _build_withdrawal_logs_tab(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(1, weight=1)
@@ -591,7 +611,7 @@ class InventoryApp:
         list_panel = ttk.Frame(parent, style="Panel.TFrame", padding=18)
         list_panel.grid(row=0, column=1, sticky="nsew")
         list_panel.columnconfigure(0, weight=1)
-        list_panel.rowconfigure(2, weight=1)
+        list_panel.rowconfigure(1, weight=1)
 
         ttk.Label(filter_panel, text="Logs", style="Muted.TLabel").grid(
             row=0, column=0, sticky="w"
@@ -637,17 +657,8 @@ class InventoryApp:
             command=self._reset_withdrawal_filters,
         ).grid(row=7, column=0, sticky="ew")
 
-        total_panel = ttk.Frame(list_panel, style="Panel.TFrame", padding=18)
-        total_panel.grid(row=0, column=0, sticky="ew", pady=(0, 18))
-        ttk.Label(total_panel, text="Retiradas encontradas", style="Muted.TLabel").pack(anchor="w")
-        ttk.Label(
-            total_panel,
-            textvariable=self.withdrawal_filter_total_var,
-            style="StatValue.TLabel",
-        ).pack(anchor="w", pady=(8, 0))
-
         ttk.Label(list_panel, text="Detalle de retiradas", style="PanelTitle.TLabel").grid(
-            row=1, column=0, sticky="w", pady=(0, 12)
+            row=0, column=0, sticky="w", pady=(0, 12)
         )
 
         columns = (
@@ -662,17 +673,17 @@ class InventoryApp:
             "motivo",
         )
         self.withdrawal_logs_tree = ttk.Treeview(list_panel, columns=columns, show="headings")
-        self.withdrawal_logs_tree.grid(row=2, column=0, sticky="nsew")
+        self.withdrawal_logs_tree.grid(row=1, column=0, sticky="nsew")
 
         for column, text, width in [
             ("fecha_hora", "Fecha y hora", 180),
             ("id", "ID", 90),
-            ("categoria", "Categoria", 120),
+            ("categoria", "Categoría", 120),
             ("marca", "Marca", 120),
             ("modelo", "Modelo", 180),
-            ("pale", "Pale", 70),
+            ("pale", "Palé", 70),
             ("cantidad", "Cantidad", 80),
-            ("quien", "Quien retira", 160),
+            ("quien", "Quién retira", 160),
             ("motivo", "Motivo", 280),
         ]:
             self.withdrawal_logs_tree.heading(column, text=text)
@@ -683,13 +694,13 @@ class InventoryApp:
             orient="vertical",
             command=self.withdrawal_logs_tree.yview,
         )
-        withdrawal_logs_scroll.grid(row=2, column=1, sticky="ns")
+        withdrawal_logs_scroll.grid(row=1, column=1, sticky="ns")
         withdrawal_logs_scroll_x = ttk.Scrollbar(
             list_panel,
             orient="horizontal",
             command=self.withdrawal_logs_tree.xview,
         )
-        withdrawal_logs_scroll_x.grid(row=3, column=0, sticky="ew")
+        withdrawal_logs_scroll_x.grid(row=2, column=0, sticky="ew")
         self.withdrawal_logs_tree.configure(yscrollcommand=withdrawal_logs_scroll.set)
         self.withdrawal_logs_tree.configure(xscrollcommand=withdrawal_logs_scroll_x.set)
 
@@ -698,7 +709,6 @@ class InventoryApp:
         self._render_assignments_table()
         self._render_operations_table()
         self._refresh_equipment_options()
-        self._refresh_consultation_options()
         self._refresh_withdrawal_filter_options()
         self._refresh_pallet_options()
         self._refresh_operation_options()
@@ -749,18 +759,19 @@ class InventoryApp:
         for item_id in self.pallet_tree.get_children():
             self.pallet_tree.delete(item_id)
 
-        selected_pallet = self.selected_pallet_var.get().strip()
-        if not selected_pallet:
-            return
+        for equipment in self.inventory["equipment_types"]:
+            quantities_by_pallet = {pale: 0 for pale in FIXED_PALLETS}
+            total_quantity = 0
 
-        pallet = self._find_pallet(selected_pallet)
-        if pallet is None:
-            return
+            for pallet_name in FIXED_PALLETS:
+                pallet_item = self._find_pallet_item(pallet_name, equipment["id"])
+                if pallet_item is None:
+                    continue
 
-        for assigned_item in pallet["items"]:
-            equipment = self._find_equipment_by_id(assigned_item["equipment_id"])
-            if equipment is None:
-                continue
+                quantity = int(pallet_item["cantidad"])
+                quantities_by_pallet[pallet_name] = quantity
+                total_quantity += quantity
+
             self.pallet_tree.insert(
                 "",
                 "end",
@@ -769,7 +780,8 @@ class InventoryApp:
                     equipment["categoria"],
                     equipment["marca"],
                     equipment["modelo"],
-                    assigned_item["cantidad"],
+                    *[quantities_by_pallet[pale] for pale in FIXED_PALLETS],
+                    total_quantity,
                 ),
             )
 
@@ -804,12 +816,7 @@ class InventoryApp:
             self.selected_equipment_var.set("")
 
     def _refresh_consultation_options(self) -> None:
-        values = [self._equipment_label(item) for item in self.inventory["equipment_types"]]
-        self.consultation_equipment_combo["values"] = values
-        if values and self.consultation_equipment_var.get() not in values:
-            self.consultation_equipment_var.set(values[0])
-        if not values:
-            self.consultation_equipment_var.set("")
+        return
 
     def _refresh_withdrawal_filter_options(self) -> None:
         values = ["Todos"] + [
@@ -820,12 +827,7 @@ class InventoryApp:
             self.withdrawal_filter_equipment_var.set(values[0] if values else "")
 
     def _refresh_pallet_options(self) -> None:
-        pallet_names = list(FIXED_PALLETS)
-        self.pallet_combo["values"] = pallet_names
-        if pallet_names and self.selected_pallet_var.get() not in pallet_names:
-            self.selected_pallet_var.set(pallet_names[0])
-        if not pallet_names:
-            self.selected_pallet_var.set("")
+        return
 
     def _refresh_operation_options(self) -> None:
         pallet_names = list(FIXED_PALLETS)
@@ -867,25 +869,64 @@ class InventoryApp:
         for item_id in self.consultation_tree.get_children():
             self.consultation_tree.delete(item_id)
 
-        selection = self.consultation_equipment_var.get().strip()
-        if not selection:
-            self.consultation_total_var.set("0")
-            return
-
-        equipment_id = selection.split("|", maxsplit=1)[0].strip()
         total_quantity = 0
+        pallets_with_stock = 0
 
-        for pallet_name in FIXED_PALLETS:
-            quantity = 0
-            pallet_item = self._find_pallet_item(pallet_name, equipment_id)
-            if pallet_item is not None:
-                quantity = int(pallet_item["cantidad"])
+        for pallet in self.inventory["pallets"]:
+            pallet_rows = []
+            pallet_total = 0
+            for assigned_item in pallet["items"]:
+                equipment = self._find_equipment_by_id(assigned_item["equipment_id"])
+                if equipment is None:
+                    continue
+
+                quantity = int(assigned_item["cantidad"])
                 total_quantity += quantity
+                pallet_total += quantity
+                pallet_rows.append(
+                    (
+                        pallet["pale"],
+                        equipment["id"],
+                        equipment["categoria"],
+                        equipment["marca"],
+                        equipment["modelo"],
+                        quantity,
+                    )
+                )
+
+            if not pallet_rows:
+                continue
+
+            pallets_with_stock += 1
+            pallet_number = int(pallet["pale"])
+            if pallet_number % 2 == 0:
+                group_tag = "even_pallet_group"
+                item_tag = "even_pallet_item"
+            else:
+                group_tag = "odd_pallet_group"
+                item_tag = "odd_pallet_item"
 
             self.consultation_tree.insert(
                 "",
                 "end",
-                values=(pallet_name, quantity),
+                values=(
+                    f'Palé {pallet["pale"]}',
+                    "",
+                    "",
+                    "",
+                    "Subtotal",
+                    pallet_total,
+                ),
+                tags=(group_tag,),
+            )
+            for row_values in pallet_rows:
+                self.consultation_tree.insert("", "end", values=row_values, tags=(item_tag,))
+
+        if pallets_with_stock == 0:
+            self.consultation_tree.insert(
+                "",
+                "end",
+                values=("-", "-", "Sin stock", "-", "-", 0),
             )
 
         self.consultation_total_var.set(str(total_quantity))
@@ -982,14 +1023,14 @@ class InventoryApp:
         if not categoria or not marca or not modelo:
             messagebox.showwarning(
                 "Campos obligatorios",
-                "Completa categoria, marca y modelo para crear un tipo de equipo.",
+                "Completa categoría, marca y modelo para crear un tipo de equipo.",
             )
             return
 
         if self._equipment_type_exists(categoria, marca, modelo):
             messagebox.showwarning(
                 "Equipo existente",
-                "Ese tipo de equipo ya existe en el catalogo.",
+                "Ese tipo de equipo ya existe en el catálogo.",
             )
             return
 
@@ -1022,26 +1063,26 @@ class InventoryApp:
         if not selected_label:
             messagebox.showwarning(
                 "Equipo requerido",
-                "Selecciona un tipo de equipo antes de asignarlo a un pale.",
+                "Selecciona un tipo de equipo antes de asignarlo a un palé.",
             )
             return
 
         if not pallet_name:
             messagebox.showwarning(
-                "Pale requerido",
-                "Indica el pale al que quieres asignar el equipo.",
+                "Palé requerido",
+                "Indica el palé al que quieres asignar el equipo.",
             )
             return
 
         try:
             quantity = int(self.assignment_quantity.get().strip())
         except ValueError:
-            messagebox.showerror("Cantidad invalida", "La cantidad debe ser un numero entero.")
+            messagebox.showerror("Cantidad inválida", "La cantidad debe ser un número entero.")
             return
 
         if quantity <= 0:
             messagebox.showwarning(
-                "Cantidad invalida",
+                "Cantidad inválida",
                 "La cantidad debe ser mayor que cero.",
             )
             return
@@ -1052,9 +1093,11 @@ class InventoryApp:
             pallet = {"pale": pallet_name, "items": []}
             self.inventory["pallets"].append(pallet)
 
+        total_quantity = quantity
         for assigned_item in pallet["items"]:
             if assigned_item["equipment_id"] == equipment_id:
-                assigned_item["cantidad"] = quantity
+                total_quantity = int(assigned_item["cantidad"]) + quantity
+                assigned_item["cantidad"] = total_quantity
                 break
         else:
             pallet["items"].append({"equipment_id": equipment_id, "cantidad": quantity})
@@ -1064,8 +1107,9 @@ class InventoryApp:
         self.selected_pallet_var.set(pallet_name)
         self._refresh_all_views()
         messagebox.showinfo(
-            "Asignacion guardada",
-            f"Se ha asignado el equipo {equipment_id} al pale {pallet_name}.",
+            "Asignación guardada",
+            f"Se han añadido {quantity} unidades de {equipment_id} al palé {pallet_name}. "
+            f"Total en el palé: {total_quantity}.",
         )
 
     def _parse_operation_selection(self) -> tuple[str, str, int] | None:
@@ -1075,19 +1119,19 @@ class InventoryApp:
         if not pallet_name or not selection:
             messagebox.showwarning(
                 "Datos incompletos",
-                "Selecciona un pale origen y un equipo antes de realizar la operacion.",
+                "Selecciona un palé origen y un equipo antes de realizar la operación.",
             )
             return None
 
         try:
             quantity = int(self.operation_quantity.get().strip())
         except ValueError:
-            messagebox.showerror("Cantidad invalida", "La cantidad debe ser un numero entero.")
+            messagebox.showerror("Cantidad inválida", "La cantidad debe ser un número entero.")
             return None
 
         if quantity <= 0:
             messagebox.showwarning(
-                "Cantidad invalida",
+                "Cantidad inválida",
                 "La cantidad debe ser mayor que cero.",
             )
             return None
@@ -1097,7 +1141,7 @@ class InventoryApp:
         if pallet_item is None:
             messagebox.showwarning(
                 "Equipo no encontrado",
-                "Ese equipo ya no existe en el pale seleccionado.",
+                "Ese equipo ya no existe en el palé seleccionado.",
             )
             return None
 
@@ -1118,7 +1162,7 @@ class InventoryApp:
         if not who:
             messagebox.showwarning(
                 "Dato obligatorio",
-                'Indica "Quien retira" para registrar la retirada.',
+                'Indica "Quién retira" para registrar la retirada.',
             )
             return None
 
@@ -1191,7 +1235,7 @@ class InventoryApp:
         self._refresh_all_views()
         messagebox.showinfo(
             "Stock actualizado",
-            f"Se han restado {quantity} unidades de {equipment_id} del pale {pallet_name}.",
+            f"Se han restado {quantity} unidades de {equipment_id} del palé {pallet_name}.",
         )
 
     def _move_between_pallets(self) -> None:
@@ -1205,14 +1249,14 @@ class InventoryApp:
         if not destination_pallet:
             messagebox.showwarning(
                 "Destino requerido",
-                "Indica el pale de destino para mover el stock.",
+                "Indica el palé de destino para mover el stock.",
             )
             return
 
         if destination_pallet.lower() == source_pallet.lower():
             messagebox.showwarning(
                 "Destino invalido",
-                "El pale de destino debe ser distinto del pale origen.",
+                "El palé de destino debe ser distinto del palé origen.",
             )
             return
 
@@ -1266,3 +1310,6 @@ class InventoryApp:
 
     def run(self) -> None:
         self.root.mainloop()
+
+
+
